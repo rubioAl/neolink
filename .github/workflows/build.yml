@@ -16,8 +16,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: apt install gstreamer
         run: |
+          # aptitude, como en upstream: libgstreamer1.0-dev exige libunwind-dev, que choca con el
+          # libunwind-14-dev preinstalado en el runner; apt se niega y aptitude lo resuelve.
           sudo apt update
-          sudo apt install -y libgstrtspserver-1.0-dev libgstreamer1.0-dev libgtk2.0-dev protobuf-compiler libssl-dev
+          sudo apt install -y aptitude
+          sudo aptitude install -y libgstrtspserver-1.0-dev libgstreamer1.0-dev libgtk2.0-dev protobuf-compiler libssl-dev
       - name: Cache cargo
         uses: actions/cache@v4
         with:
