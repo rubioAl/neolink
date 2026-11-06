@@ -200,20 +200,31 @@ fn bc_modern_msg<'a>(
                         .unwrap_or("Not Text".to_string())
                 );
             }
-            let xml = BcXml::try_parse(processed_payload_buf.as_slice()).map_err(|e| {
-                error!("header.msg_id: {}", header.msg_id);
-                error!(
-                    "processed_payload_buf: {:X?}::{:?}",
-                    processed_payload_buf,
-                    std::str::from_utf8(&processed_payload_buf)
-                );
-                log::error!("e: {:?}", e);
-                Err::Error(make_error(
-                    buf,
-                    "Unable to parse Payload XML",
-                    ErrorKind::MapRes,
-                ))
-            })?;
+            // Rama «vigia»: guardar el texto tal cual para la orden `neolink xml`
+            crate::bc::rawxml::capture(header.msg_num, header.msg_id, &processed_payload_buf);
+            let xml = match BcXml::try_parse(processed_payload_buf.as_slice()) {
+                Ok(xml) => xml,
+                Err(e) if crate::bc::rawxml::enabled() => {
+                    // XML que Neolink no conoce: con la captura activa no es un error, el texto
+                    // ya está guardado y la respuesta debe llegar a quien la pidió
+                    log::debug!("msg_id {}: XML no tipado ({:?}); se entrega vacío", header.msg_id, e);
+                    BcXml::default()
+                }
+                Err(e) => {
+                    error!("header.msg_id: {}", header.msg_id);
+                    error!(
+                        "processed_payload_buf: {:X?}::{:?}",
+                        processed_payload_buf,
+                        std::str::from_utf8(&processed_payload_buf)
+                    );
+                    log::error!("e: {:?}", e);
+                    return Err(Err::Error(make_error(
+                        buf,
+                        "Unable to parse Payload XML",
+                        ErrorKind::MapRes,
+                    )));
+                }
+            };
             payload = Some(BcPayloads::BcXml(xml));
         }
     } else {

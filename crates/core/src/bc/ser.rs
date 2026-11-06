@@ -97,6 +97,8 @@ fn bc_payload<W: Write>(
             encryption_protocol.encrypt(enc_offset, &xml_bytes)
         }
         BcPayloads::Binary(x) => x.to_owned(),
+        // Rama «vigia»: XML escrito a mano (orden `neolink xml --body`), cifrado como el tipado
+        BcPayloads::RawXml(x) => encryption_protocol.encrypt(enc_offset, x.as_bytes()),
     };
     slice(payload_bytes)
 }

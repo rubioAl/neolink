@@ -41,4 +41,7 @@ pub mod xml;
 /// Contains the encryption protocols
 pub mod crypto;
 
+/// Captura del XML crudo de las respuestas (rama «vigia», orden `neolink xml`)
+pub mod rawxml;
+
 pub(crate) mod codex;

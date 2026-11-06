@@ -15,6 +15,8 @@ pub enum BcPayloads {
     /// Binary payloads are received from the camera for streams and sent to the camera
     /// for talk-back and firmware updates
     Binary(Vec<u8>),
+    /// XML escrito a mano, se envía cifrado como el tipado (rama «vigia», `neolink xml --body`)
+    RawXml(String),
 }
 
 /// The top level BC Xml

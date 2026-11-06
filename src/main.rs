@@ -53,6 +53,7 @@ mod statusled;
 #[cfg(feature = "gstreamer")]
 mod talk;
 mod utils;
+mod xml;
 
 use cmdline::{Command, Opt};
 use common::NeoReactor;
@@ -142,6 +143,9 @@ async fn main() -> Result<()> {
         }
         Some(Command::Services(opts)) => {
             services::main(opts, neo_reactor.clone()).await?;
+        }
+        Some(Command::Xml(opts)) => {
+            xml::main(opts, neo_reactor.clone()).await?;
         }
     }
 
