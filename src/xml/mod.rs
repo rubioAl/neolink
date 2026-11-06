@@ -9,7 +9,8 @@
 ///
 /// ```bash
 /// neolink xml --config=config.toml CameraName 80 199 332
-/// neolink xml --config=config.toml CameraName 342 --body '<?xml version="1.0" encoding="UTF-8" ?><body><AiDetectCfg version="1.1"><chn>0</chn><type>people</type></AiDetectCfg></body>'
+/// neolink xml --config=config.toml CameraName 80 '342=<body><AiDetectCfg version="1.1"><chn>0</chn><type>people</type></AiDetectCfg></body>'
+/// neolink xml --config=config.toml CameraName 342 --body '<body><AiDetectCfg version="1.1"><chn>0</chn><type>vehicle</type></AiDetectCfg></body>'
 /// ```
 ///
 /// Salida: por cada número, una línea `### msg_id=N response_code=C` y después el XML (o
@@ -23,13 +24,33 @@ use crate::common::NeoReactor;
 
 pub(crate) use cmdline::Opt;
 
+/// Antepone la declaración XML si el cuerpo no la trae (la cámara la espera)
+fn with_declaration(xml: &str) -> String {
+    let xml = xml.trim();
+    if xml.starts_with("<?xml") {
+        xml.to_string()
+    } else {
+        format!("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>{}", xml)
+    }
+}
+
 /// Entry point for the xml subcommand
 pub(crate) async fn main(opt: Opt, reactor: NeoReactor) -> Result<()> {
     let camera = reactor.get(&opt.camera).await?;
     let wait = std::time::Duration::from_secs(opt.wait);
 
-    for id in opt.ids.iter().copied() {
-        let body = opt.body.clone();
+    for item in opt.ids.iter() {
+        let (id, body) = match item.split_once('=') {
+            Some((id, xml)) => (id.trim().parse::<u32>(), Some(with_declaration(xml))),
+            None => (item.trim().parse::<u32>(), opt.body.clone().map(|b| with_declaration(&b))),
+        };
+        let id = match id {
+            Ok(id) => id,
+            Err(_) => {
+                println!("### msg_id={} error=\"no es un número de mensaje\"", item);
+                continue;
+            }
+        };
         let result = camera
             .run_task(move |cam| {
                 let body = body.clone();

@@ -6,9 +6,10 @@ use clap::Parser;
 pub struct Opt {
     /// The name of the camera. Must be a name in the config
     pub camera: String,
-    /// Números de mensaje a pedir (GET con cuerpo vacío), p. ej. 80 199 332
+    /// Mensajes a pedir: `ID` (GET con cuerpo vacío) o `ID=<xml>` (con ese cuerpo), p. ej.
+    /// 80 332 '342=<body><AiDetectCfg version="1.1"><chn>0</chn><type>people</type></AiDetectCfg></body>'
     #[arg(required = true)]
-    pub ids: Vec<u32>,
+    pub ids: Vec<String>,
     /// Cuerpo XML a enviar con cada mensaje (por defecto, ninguno)
     #[arg(long)]
     pub body: Option<String>,
