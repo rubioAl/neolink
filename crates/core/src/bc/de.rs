@@ -120,14 +120,23 @@ fn bc_modern_msg<'a>(
         }
         // Apply the XML parse function, but throw away the reference to decrypted in the Ok and
         // Err case. This error-error-error thing is the same idiom Nom uses internally.
-        let parsed = Extension::try_parse(processed_ext_buf).map_err(|_| {
-            log::error!("Extension buffer: {:?}", processed_ext_buf);
-            Err::Error(make_error(
-                buf,
-                "Unable to parse Extension XML",
-                ErrorKind::MapRes,
-            ))
-        })?;
+        let parsed = match Extension::try_parse(processed_ext_buf) {
+            Ok(parsed) => parsed,
+            Err(e) if crate::bc::rawxml::enabled() => {
+                // Rama «vigia»: con la captura activa, una Extension desconocida (p. ej. la respuesta
+                // al mensaje 93) no debe tirar la conexión; se sigue con una Extension vacía
+                log::debug!("msg_id {}: Extension no tipada ({:?}); se sigue", header.msg_id, e);
+                Extension::default()
+            }
+            Err(_) => {
+                log::error!("Extension buffer: {:?}", processed_ext_buf);
+                return Err(Err::Error(make_error(
+                    buf,
+                    "Unable to parse Extension XML",
+                    ErrorKind::MapRes,
+                )));
+            }
+        };
         if let Extension {
             binary_data: Some(1),
             encrypt_len,
